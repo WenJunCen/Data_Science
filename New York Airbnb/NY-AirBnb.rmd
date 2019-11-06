@@ -1,0 +1,38 @@
+---
+title: "NY Airbnb"
+author: "WenJun(John) Cen"
+date: "10/30/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#Clear All variables & Clear the Screen
+rm(list=ls())
+cat("\014")
+
+#Read in the Data
+airbnb <- read.csv("AB_NYC_2019.csv")
+
+
+#Explore the data
+str(airbnb)
+summary(airbnb)
+
+library(tidyverse)
+library(neuralnet)
+library(MASS)
+library(sf)
+library(leaflet)
+library(tmap)
+library(tmaptools)
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Cleaning
+```{r include=FALSE}
+airbnb_separate <- separate(airbnb, col = last_review, into = c("review_year", "review_month", "review_day"),
+                            sep = "-") ## Seperate string of date into year, month, and day
+
+airbnb_separate <- replace_na(airbnb_separate, list(review_month = "", review_day = "")) ## Replace NA value with blank
+```
