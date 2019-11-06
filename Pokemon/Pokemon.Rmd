@@ -1,30 +1,122 @@
 ---
 title: "Pokemon"
 author: "WenJun(John) Cen"
-date: "11/6/2019"
-output: html_document
+date: "10/25/2019"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
+
+library(tidyverse)
+library(gmodels)
+library(caTools)
+library(MASS)
+
+# Clear All Variables & Clear the Screen
+rm(list=ls())
+cat("\014")
+
+# Read the csv file
+pokemon_data <- read.csv("pokemon_data.csv", header = TRUE, sep = ",")
+pokemon_data$Name <- as.character(pokemon_data$Name)
+
+# Info on the data
+str(pokemon_data)
+summary(pokemon_data)
+
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Visualize Pokemon Legendary Data
+```{r}
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+pokemon_data %>%
+  group_by(Generation) %>%
+ggplot(data = pokemon_data, mapping = aes(x = pokemon_data$Generation)) +
+  theme_bw() +
+  geom_bar(colour = "red", fill = "white") +
+  scale_x_continuous(breaks = c(1:6)) +
+  facet_wrap(~ Legendary, scales = "free_y") +
+  labs(x = "Generation", y = "Total Number of Pokemon", caption = "Based on Kaggle",
+       title = "Pokemon Chart\n", subtitle = "Generation 1 - 6") +
+  theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
 ```
 
-## Including Plots
+## Visualize Pokemon HP Data
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+pokemon_data %>%
+  ggplot(mapping = aes(x = Attack, y = HP, shape = Legendary, colour = Legendary)) +
+  geom_point() +
+  labs(title = "Attack Vs. HP\n", x = "\nAttack", y = "HP\n", subtitle = "Pokemon Statistics\n") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  annotate("rect", xmin = 75, xmax = 190, ymin = 40, ymax = 150,
+  alpha = .2)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r, include=FALSE}
+## Extract columns of stats to determine legendary
+pokemon_stat <- dplyr::select(pokemon_data, 1:2, 5:10, 12)
+
+## Split 80/20 for train and test sample
+set.seed(111)
+pokemon_sample <- sample.split(pokemon_stat,SplitRatio = 0.8)
+
+pokemon_test <- subset(pokemon_stat, pokemon_sample == FALSE)
+pokemon_train <- subset(pokemon_stat, pokemon_sample == TRUE)
+```
+
+## Pokemon Linear Model to determine HP
+
+```{r eval=FALSE}
+
+lm_pokemon <- lm(HP ~ . - Name - X. - Legendary, data = pokemon_train)
+summary(lm_pokemon)
+
+step_lm_pokemon <- stepAIC(lm_pokemon, data = pokemon_train, direction = "both")
+summary(step_lm_pokemon)
+```
+
+## Pokemon Logit Model to Determine Legendary
+
+```{r}
+## Logit regression
+glm_pokemon <- glm(Legendary ~ HP + Attack + Defense + Sp..Atk + Sp..Def + Speed, family = binomial(link = "logit"), data = pokemon_train)
+summary(glm_pokemon)
+
+# Predicting Legendary for the TESTING SAMPLE based on the Model Estimates
+(pokemon_predict <- data.frame(ID = pokemon_test$X.,
+                              Name = pokemon_test$Name,
+                                  BinaryLogitProbability = predict(glm_pokemon, pokemon_test, type = c("response")),
+                                  BinaryLogitPredict     = round(predict(glm_pokemon, pokemon_test, type = c("response")), digits = 0)))
+
+# Find the sum of prediction
+sum(pokemon_predict["BinaryLogitPredict"])
+sum(pokemon_predict["BinaryLogitProbability"])
+
+#Histogram
+hist(pokemon_predict$BinaryLogitProbability, main = paste("Histogram of Response Probs"), xlab = "Prob of Response")
+
+# Confusion Matrix
+library(gmodels)
+CrossTable(pokemon_test$Legendary, pokemon_predict$BinaryLogitPredict,prop.r=TRUE, prop.c=FALSE, prop.t=FALSE,
+           prop.chisq=FALSE, dnn = c("Real Response", "Predicted Response"))
+```
+
+```{r, include = FALSE}
+# Exporting the Predictions to Excel
+# You can open a csv file in xl
+write.csv(pokemon_predict, file = "Pokemon_Prediction.csv")
+```
+```{r, eval=FALSE}
+# Find expected value from logit model
+# Created new dataframe to input value. Plug in the 6 stats to get predicted binary on whether it is legendary.
+rm(newdata,list = character())
+newdata <- setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("HP","Attack","Defense","Sp..Atk","Sp..Def","Speed"))
+newdata[nrow(newdata)+1,] <- c(106,90,130,190,154,110)
+round(predict(glm_pokemon, newdata, type = c("response")),digits = 0)
+```
