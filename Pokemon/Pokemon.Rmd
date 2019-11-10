@@ -112,15 +112,37 @@ CrossTable(pokemon_test$Legendary, pokemon_predict$BinaryLogitPredict,prop.r=TRU
 # You can open a csv file in xl
 write.csv(pokemon_predict, file = "Pokemon_Prediction.csv")
 ```
+
 ```{r, eval=FALSE}
 # Find expected value from logit model
 # Created new dataframe to input value. Plug in the 6 stats to get predicted binary on whether it is legendary.
-rm(newdata,list = character())
+rm(newdata,list = character()) # Clear new data to rerun
 newdata <- setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("HP","Attack","Defense","Sp..Atk","Sp..Def","Speed"))
-newdata[nrow(newdata)+1,] <- c(106,90,130,190,154,110)
+newdata[nrow(newdata)+1,] <- c(106,90,130,190,154,110) # Edit 6 numers for model predictions
 round(predict(glm_pokemon, newdata, type = c("response")),digits = 0)
 ```
 
 ## Random Forest
 ```{r}
+library(randomForest)
+
+# Change to binary for random forest
+pokemon_train$Legendary <- as.factor(pokemon_train$Legendary)
+
+pokemon_forest <- randomForest(data = pokemon_train, Legendary ~ . - X. - Name, ntree=5000, mtry=3)
+
+#Error Rate
+plot(pokemon_forest, main = "Error as forest grows")
+
+
+library(gmodels)
+
+pokemon_forest_predict <- predict(pokemon_forest, pokemon_test, c("class"), predict.all = FALSE)
+
+  
+CrossTable(pokemon_forest_predict, pokemon_test, prob.r = FALSE, prob.c = FALSE, 
+            prob.t = FALSE, prob.chisq = FALSE, dnn = c("Predicted", "Actual"))
+
+
+#
 ```
