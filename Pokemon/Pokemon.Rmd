@@ -120,3 +120,7 @@ newdata <- setNames(data.frame(matrix(ncol = 6, nrow = 0)), c("HP","Attack","Def
 newdata[nrow(newdata)+1,] <- c(106,90,130,190,154,110)
 round(predict(glm_pokemon, newdata, type = c("response")),digits = 0)
 ```
+
+## Random Forest
+```{r}
+```
