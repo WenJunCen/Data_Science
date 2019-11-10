@@ -32,7 +32,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Visualize Pokemon Legendary Data
 ```{r}
-
 pokemon_data %>%
   group_by(Generation) %>%
 ggplot(data = pokemon_data, mapping = aes(x = pokemon_data$Generation)) +
@@ -103,7 +102,8 @@ hist(pokemon_predict$BinaryLogitProbability, main = paste("Histogram of Response
 
 # Confusion Matrix
 library(gmodels)
-CrossTable(pokemon_test$Legendary, pokemon_predict$BinaryLogitPredict,prop.r=TRUE, prop.c=FALSE, prop.t=FALSE,
+CrossTable(pokemon_test$Legendary, pokemon_predict$BinaryLogitPredict,
+           prop.r=TRUE, prop.c=FALSE,prop.t=FALSE,
            prop.chisq=FALSE, dnn = c("Real Response", "Predicted Response"))
 ```
 
@@ -129,20 +129,29 @@ library(randomForest)
 # Change to binary for random forest
 pokemon_train$Legendary <- as.factor(pokemon_train$Legendary)
 
+# Random Forest Prediction
 pokemon_forest <- randomForest(data = pokemon_train, Legendary ~ . - X. - Name, ntree=5000, mtry=3)
-
-#Error Rate
-plot(pokemon_forest, main = "Error as forest grows")
-
-
-library(gmodels)
-
 pokemon_forest_predict <- predict(pokemon_forest, pokemon_test, c("class"), predict.all = FALSE)
 
-  
-CrossTable(pokemon_forest_predict, pokemon_test, prob.r = FALSE, prob.c = FALSE, 
-            prob.t = FALSE, prob.chisq = FALSE, dnn = c("Predicted", "Actual"))
+# Error Rate Graph
+plot(pokemon_forest, main = "Error as forest grows")
 
+## Create Confusion Matrix with Prediction vs. Actual
+library(gmodels)
+CrossTable(pokemon_forest_predict, pokemon_test$Legendary, prop.r=FALSE, prop.c=FALSE, 
+           prop.t=FALSE, prop.chisq=FALSE, dnn = c("Predicted", "Actual"))
+```
 
-#
+## Result
+```{r}
+library(ggpubr)
+
+#Logit Confusion Matrix
+CrossTable(pokemon_test$Legendary, pokemon_predict$BinaryLogitPredict,
+           prop.r=TRUE, prop.c=FALSE,prop.t=FALSE,
+           prop.chisq=FALSE, dnn = c("Real Response", "Predicted Response"))
+
+#Random Forest Confusion Matrix
+CrossTable(pokemon_forest_predict, pokemon_test$Legendary, prop.r=FALSE, prop.c=FALSE, 
+           prop.t=FALSE, prop.chisq=FALSE, dnn = c("Predicted", "Actual"))
 ```
