@@ -23,16 +23,44 @@ library(neuralnet)
 library(MASS)
 library(sf)
 library(leaflet)
-library(tmap)
+library(tmap) ## Create map and geometry columns
 library(tmaptools)
+library(ggpubr)
 
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Data Cleaning
-```{r include=FALSE}
+```{r echo=FALSE}
 airbnb_separate <- separate(airbnb, col = last_review, into = c("review_year", "review_month", "review_day"),
                             sep = "-") ## Seperate string of date into year, month, and day
 
 airbnb_separate <- replace_na(airbnb_separate, list(review_month = "", review_day = "")) ## Replace NA value with blank
+```
+
+## Visualization
+```{R}
+## Scatterplot on price and # of reviews
+air_scatter <- airbnb %>% 
+  ggplot(mapping = aes(x = number_of_reviews, y = price, colour = neighbourhood_group)) +
+  theme_bw() +
+  geom_point() +
+  labs(x = "\n# of reviews", y = "Price\n", title = "Reviews Vs. Price Chart\n",
+       subtitle = "Airbnb") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+## History on which group has highest count
+air_his <- airbnb %>%
+  mutate(neighbourhood_group = fct_infreq(neighbourhood_group)) %>%
+  ggplot(mapping = aes(x = neighbourhood_group))  +
+  geom_bar(fill = "light green") +
+  labs(x = "\n Neighbourhood Group", y = "Total\n", title = "Neighbourhood Group\n",
+       subtitle = "Airbnb") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+## ggarrange(air_scatter, air_his, ## put two plots on the same pane
+##          ncol = 2, nrow = 1,
+##          widths = c(2, 1))
+air_scatter
+air_his
 ```
