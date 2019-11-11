@@ -58,9 +58,26 @@ air_his <- airbnb %>%
        subtitle = "Airbnb") +
   theme(plot.title = element_text(hjust = 0.5))
 
+## Boxplot
+
+air_box <- airbnb %>%
+  ggplot(mapping = aes(x = room_type, y = price)) +
+  geom_boxplot(aes(colour = neighbourhood_group)) +
+  scale_y_continuous(limits = c(0, 350),
+                     labels = scales::dollar) +
+  labs(x = "Room Type", y = "Price")
+  
+  ## coord_cartesian(y= c(0, 350)) -- zoom in
+  ## scale_y_continuous(limits = c(0, 350)) -- set limits
+
 ## ggarrange(air_scatter, air_his, ## put two plots on the same pane
 ##          ncol = 2, nrow = 1,
 ##          widths = c(2, 1))
 air_scatter
 air_his
+air_box
+```
+
+```{r}
+
 ```
